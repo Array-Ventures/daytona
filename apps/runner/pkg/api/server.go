@@ -17,11 +17,13 @@ package api
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/daytonaio/runner/cmd/runner/config"
+	"github.com/daytonaio/runner/internal/util"
 	"github.com/daytonaio/runner/pkg/api/controllers"
 	"github.com/daytonaio/runner/pkg/api/docs"
 	"github.com/daytonaio/runner/pkg/api/middlewares"
@@ -31,9 +33,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	log "github.com/sirupsen/logrus"
 
 	common_errors "github.com/daytonaio/common-go/pkg/errors"
+	sloggin "github.com/samber/slog-gin"
 
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -76,6 +78,9 @@ func (a *ApiServer) Start() error {
 
 	binding.Validator = new(DefaultValidator)
 
+	gin.DefaultWriter = &util.InfoLogWriter{}
+	gin.DefaultErrorWriter = &util.ErrorLogWriter{}
+
 	a.router = gin.New()
 	a.router.Use(gin.Recovery())
 
@@ -84,9 +89,9 @@ func (a *ApiServer) Start() error {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	a.router.Use(middlewares.LoggingMiddleware())
+	a.router.Use(otelgin.Middleware("api"))
+	a.router.Use(sloggin.New(slog.Default()))
 	a.router.Use(common_errors.NewErrorMiddleware(common.HandlePossibleDockerError))
-	a.router.Use(otelgin.Middleware("daytona-runner"))
 
 	public := a.router.Group("/")
 	public.GET("", controllers.HealthCheck)
@@ -162,6 +167,6 @@ func (a *ApiServer) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := a.httpServer.Shutdown(ctx); err != nil {
-		log.Error(err)
+		slog.Error("Failed to shutdown API server", "error", err)
 	}
 }

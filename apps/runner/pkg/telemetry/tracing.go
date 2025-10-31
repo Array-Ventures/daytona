@@ -6,38 +6,31 @@ package telemetry
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/daytonaio/runner/cmd/runner/config"
-	"github.com/daytonaio/runner/internal"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 )
 
 // InitTracing initializes OpenTelemetry tracing
 func InitTracing(cfg *config.Config) (func(), error) {
-	if !cfg.EnableTracing {
+	if !cfg.OtelTracingEnabled {
 		// Return a no-op shutdown function when tracing is disabled
 		return func() {}, nil
 	}
 
+	// Configure OTEL error handler to use slog at ERROR level
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		slog.Error("OpenTelemetry error", "error", err)
+	}))
+
 	// Create resource with service information
-	res, err := resource.New(context.Background(),
-		resource.WithAttributes(
-			semconv.ServiceName("runner"),
-			semconv.ServiceVersion(internal.Version),
-			semconv.DeploymentEnvironmentName(cfg.Environment),
-		),
-		resource.WithFromEnv(),
-		resource.WithProcess(),
-		resource.WithTelemetrySDK(),
-		resource.WithHost(),
-	)
+	res, err := getOtelResource(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
