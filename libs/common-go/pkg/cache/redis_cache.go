@@ -15,10 +15,10 @@ import (
 )
 
 type RedisConfig struct {
-	Host     *string `envconfig:"HOST"`
-	Port     *int    `envconfig:"PORT"`
-	Password *string `envconfig:"PASSWORD"`
-	TLS      *bool   `envconfig:"TLS"`
+	Host     *string `envconfig:"HOST" mapstructure:"host"`
+	Port     *int    `envconfig:"PORT" mapstructure:"port"`
+	Password *string `envconfig:"PASSWORD" mapstructure:"password"`
+	TLS      *bool   `envconfig:"TLS" mapstructure:"tls"`
 }
 
 type RedisCache[T any] struct {
