@@ -6,7 +6,7 @@
 import * as pathe from 'pathe'
 import { quote, parse as parseShellQuote } from 'shell-quote'
 import { DaytonaError } from './errors/DaytonaError'
-import { dynamicRequire } from './utils/Import'
+import { dynamicImportSync } from './utils/Import'
 
 const SUPPORTED_PYTHON_SERIES = ['3.9', '3.10', '3.11', '3.12', '3.13'] as const
 type SupportedPythonSeries = (typeof SUPPORTED_PYTHON_SERIES)[number]
@@ -112,8 +112,8 @@ export class Image {
    */
   pipInstallFromRequirements(requirementsTxt: string, options?: PipInstallOptions): Image {
     const importErrorPrefix = '"pipInstallFromRequirements" is not supported: '
-    const expandTilde = dynamicRequire('expand-tilde', importErrorPrefix)
-    const fs = dynamicRequire('fs', importErrorPrefix)
+    const expandTilde = dynamicImportSync('expand-tilde', importErrorPrefix)
+    const fs = dynamicImportSync('fs', importErrorPrefix)
 
     const expandedPath = expandTilde(requirementsTxt)
     if (!fs.existsSync(expandedPath)) {
@@ -142,9 +142,9 @@ export class Image {
    */
   pipInstallFromPyproject(pyprojectToml: string, options?: PyprojectOptions): Image {
     const importErrorPrefix = '"pipInstallFromPyproject" is not supported: '
-    const expandTilde = dynamicRequire('expand-tilde', importErrorPrefix)
-    const toml = dynamicRequire('@iarna/toml', importErrorPrefix)
-    const fs = dynamicRequire('fs', importErrorPrefix)
+    const expandTilde = dynamicImportSync('expand-tilde', importErrorPrefix)
+    const toml = dynamicImportSync('@iarna/toml', importErrorPrefix)
+    const fs = dynamicImportSync('fs', importErrorPrefix)
 
     const tomlData = toml.parse(fs.readFileSync(expandTilde(pyprojectToml), 'utf-8')) as any
     const dependencies: string[] = []
@@ -186,7 +186,7 @@ export class Image {
    */
   addLocalFile(localPath: string, remotePath: string): Image {
     const importErrorPrefix = '"addLocalFile" is not supported: '
-    const expandTilde = dynamicRequire('expand-tilde', importErrorPrefix)
+    const expandTilde = dynamicImportSync('expand-tilde', importErrorPrefix)
 
     if (remotePath.endsWith('/')) {
       remotePath = remotePath + pathe.basename(localPath)
@@ -213,7 +213,7 @@ export class Image {
    */
   addLocalDir(localPath: string, remotePath: string): Image {
     const importErrorPrefix = '"addLocalDir" is not supported: '
-    const expandTilde = dynamicRequire('expand-tilde', importErrorPrefix)
+    const expandTilde = dynamicImportSync('expand-tilde', importErrorPrefix)
 
     const expandedPath = expandTilde(localPath)
 
@@ -351,8 +351,8 @@ export class Image {
   dockerfileCommands(dockerfileCommands: string[], contextDir?: string): Image {
     if (contextDir) {
       const importErrorPrefix = '"dockerfileCommands" is not supported: '
-      const expandTilde = dynamicRequire('expand-tilde', importErrorPrefix)
-      const fs = dynamicRequire('fs', importErrorPrefix)
+      const expandTilde = dynamicImportSync('expand-tilde', importErrorPrefix)
+      const fs = dynamicImportSync('fs', importErrorPrefix)
 
       const expandedPath = expandTilde(contextDir)
       if (!fs.existsSync(expandedPath) || !fs.statSync(expandedPath).isDirectory()) {
@@ -389,8 +389,8 @@ export class Image {
    */
   static fromDockerfile(path: string): Image {
     const importErrorPrefix = '"fromDockerfile" is not supported: '
-    const expandTilde = dynamicRequire('expand-tilde', importErrorPrefix)
-    const fs = dynamicRequire('fs', importErrorPrefix)
+    const expandTilde = dynamicImportSync('expand-tilde', importErrorPrefix)
+    const fs = dynamicImportSync('fs', importErrorPrefix)
 
     const expandedPath = pathe.resolve(expandTilde(path))
     if (!fs.existsSync(expandedPath)) {
@@ -577,7 +577,7 @@ export class Image {
       // Check if the line contains a COPY command
       if (/^\s*COPY\s+(?!.*--from=)/i.test(line)) {
         const importErrorPrefix = '"extractCopySources" is not supported: '
-        const fg = dynamicRequire('fast-glob', importErrorPrefix)
+        const fg = dynamicImportSync('fast-glob', importErrorPrefix)
 
         const commandParts = this.parseCopyCommand(line)
         if (commandParts) {

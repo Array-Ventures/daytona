@@ -3,28 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import importSync from 'import-sync'
 import { DaytonaError } from '../errors/DaytonaError'
 import { RUNTIME } from './Runtime'
 
+// All dynamic imports should be added here so that Webpack can bundle them.
 const loaderMap = {
-  'fast-glob': () => import('fast-glob'),
-  '@iarna/toml': () => import('@iarna/toml'),
   stream: () => import('stream'),
   tar: () => import('tar'),
-  'expand-tilde': () => import('expand-tilde'),
   ObjectStorage: () => import('../ObjectStorage.js'),
   fs: (): Promise<typeof import('fs')> => import('fs'),
   'form-data': () => import('form-data'),
+  'fast-glob': () => import('fast-glob'),
+  '@iarna/toml': () => import('@iarna/toml'),
+  'expand-tilde': () => import('expand-tilde'),
+  dotenv: () => import('dotenv'),
 }
 
-const requireMap = {
-  'fast-glob': () => require('fast-glob'),
-  '@iarna/toml': () => require('@iarna/toml'),
-  stream: () => require('stream'),
-  tar: () => require('tar'),
-  'expand-tilde': () => require('expand-tilde'),
-  fs: () => require('fs'),
-  'form-data': () => require('form-data'),
+const importSyncMap = {
+  'fast-glob': () => importSync('fast-glob'),
+  '@iarna/toml': () => importSync('@iarna/toml'),
+  'expand-tilde': () => importSync('expand-tilde'),
+  fs: () => importSync('fs'),
+  dotenv: () => importSync('dotenv'),
 }
 
 const validateMap: Record<string, (mod: any) => boolean> = {
@@ -35,6 +36,7 @@ const validateMap: Record<string, (mod: any) => boolean> = {
   'expand-tilde': (mod: any) => typeof mod === 'function',
   fs: (mod: any) => typeof mod.createReadStream === 'function' && typeof mod.readFile === 'function',
   'form-data': (mod: any) => typeof mod === 'function',
+  dotenv: (mod: any) => typeof mod.config === 'function',
 }
 
 type ModuleMap = typeof loaderMap
@@ -48,46 +50,48 @@ export async function dynamicImport<K extends keyof ModuleMap>(
     throw new DaytonaError(`${errorPrefix || ''} Unknown module "${name}"`)
   }
 
-  let mod: any
   try {
-    mod = (await loader()) as any
-    mod = mod?.default ?? mod
+    const rawModule = await loader()
+    return processModule(rawModule, name, errorPrefix)
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    throw new DaytonaError(`${errorPrefix || ''} Module "${name}" is not available in the "${RUNTIME}" runtime: ${msg}`)
+    handleLoadError(err, name, errorPrefix)
+  }
+}
+
+type ImportSyncMap = typeof importSyncMap
+
+export function dynamicImportSync<K extends keyof ImportSyncMap>(
+  name: K,
+  errorPrefix?: string,
+): ReturnType<ImportSyncMap[K]> {
+  const loader = importSyncMap[name]
+  if (!loader) {
+    throw new DaytonaError(`${errorPrefix || ''} Unknown module "${name}"`)
   }
 
-  if (validateMap[name] && !validateMap[name](mod)) {
+  try {
+    const rawModule = loader()
+    return processModule(rawModule, name, errorPrefix)
+  } catch (err) {
+    handleLoadError(err, name, errorPrefix)
+  }
+}
+
+function processModule(rawModule: any, moduleName: string, errorPrefix?: string): any {
+  const mod = rawModule?.default ?? rawModule
+
+  if (validateMap[moduleName] && !validateMap[moduleName](mod)) {
     throw new DaytonaError(
-      `${errorPrefix || ''} Module "${name}" didn't pass import validation in the "${RUNTIME}" runtime`,
+      `${errorPrefix || ''} Module "${moduleName}" didn't pass import validation in the "${RUNTIME}" runtime`,
     )
   }
 
   return mod
 }
 
-type RequireMap = typeof requireMap
-
-export function dynamicRequire<K extends keyof RequireMap>(name: K, errorPrefix?: string): ReturnType<RequireMap[K]> {
-  const loader = requireMap[name]
-  if (!loader) {
-    throw new DaytonaError(`${errorPrefix || ''} Unknown module "${name}"`)
-  }
-
-  let mod: any
-  try {
-    mod = loader()
-    mod = mod?.default ?? mod
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    throw new DaytonaError(`${errorPrefix || ''} Module "${name}" is not available in the "${RUNTIME}" runtime: ${msg}`)
-  }
-
-  if (validateMap[name] && !validateMap[name](mod)) {
-    throw new DaytonaError(
-      `${errorPrefix || ''} Module "${name}" didn't pass import validation in the "${RUNTIME}" runtime`,
-    )
-  }
-
-  return mod
+function handleLoadError(err: unknown, moduleName: string, errorPrefix?: string): never {
+  const msg = err instanceof Error ? err.message : String(err)
+  throw new DaytonaError(
+    `${errorPrefix || ''} Module "${moduleName}" is not available in the "${RUNTIME}" runtime: ${msg}`,
+  )
 }
