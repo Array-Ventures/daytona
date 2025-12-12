@@ -353,11 +353,7 @@ class AsyncDaytona:
 
         return await self._create(params, timeout=timeout, on_snapshot_create_logs=on_snapshot_create_logs)
 
-    @with_timeout(
-        error_message=lambda self, timeout: (
-            f"Failed to create and start sandbox within {timeout} seconds timeout period."
-        )
-    )
+    @with_timeout()
     async def _create(
         self,
         params: Optional[Union[CreateSandboxFromSnapshotParams, CreateSandboxFromImageParams]] = None,
@@ -418,6 +414,9 @@ class AsyncDaytona:
             sandbox_data.memory = params.resources.memory
             sandbox_data.disk = params.resources.disk
             sandbox_data.gpu = params.resources.gpu
+
+        while True:
+            await asyncio.sleep(1)
 
         response = await self._sandbox_api.create_sandbox(sandbox_data, _request_timeout=timeout or None)
 

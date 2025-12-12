@@ -260,11 +260,7 @@ class AsyncSandbox(SandboxDto):
         return self.labels
 
     @intercept_errors(message_prefix="Failed to start sandbox: ")
-    @with_timeout(
-        error_message=lambda self, timeout: (
-            f"Sandbox {self.id} failed to start within the {timeout} seconds timeout period"
-        )
-    )
+    @with_timeout()
     async def start(self, timeout: Optional[float] = 60):
         """Starts the Sandbox and waits for it to be ready.
 
@@ -288,11 +284,7 @@ class AsyncSandbox(SandboxDto):
         await self.wait_for_sandbox_start(timeout=max(0.001, timeout - time_elapsed) if timeout else timeout)
 
     @intercept_errors(message_prefix="Failed to stop sandbox: ")
-    @with_timeout(
-        error_message=lambda self, timeout: (
-            f"Sandbox {self.id} failed to stop within the {timeout} seconds timeout period"
-        )
-    )
+    @with_timeout()
     async def stop(self, timeout: Optional[float] = 60):
         """Stops the Sandbox and waits for it to be fully stopped.
 
@@ -327,11 +319,7 @@ class AsyncSandbox(SandboxDto):
         await self.__refresh_data_safe()
 
     @intercept_errors(message_prefix="Failure during waiting for sandbox to start: ")
-    @with_timeout(
-        error_message=lambda self, timeout: (
-            f"Sandbox {self.id} failed to become ready within the {timeout} seconds timeout period"
-        )
-    )
+    @with_timeout()
     async def wait_for_sandbox_start(
         self,
         timeout: Optional[float] = 60,  # pylint: disable=unused-argument
@@ -360,11 +348,7 @@ class AsyncSandbox(SandboxDto):
             await asyncio.sleep(0.1)  # Wait 100ms between checks
 
     @intercept_errors(message_prefix="Failure during waiting for sandbox to stop: ")
-    @with_timeout(
-        error_message=lambda self, timeout: (
-            f"Sandbox {self.id} failed to become stopped within the {timeout} seconds timeout period"
-        )
-    )
+    @with_timeout()
     async def wait_for_sandbox_stop(
         self,
         timeout: Optional[float] = 60,  # pylint: disable=unused-argument

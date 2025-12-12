@@ -21,7 +21,7 @@ def main():
             disk=3,
         ),
     )
-    sandbox = daytona.create(params, timeout=150, on_snapshot_create_logs=print)
+    sandbox = daytona.create(params, timeout=5, on_snapshot_create_logs=print)
 
     # Run the code securely inside the sandbox
     response = sandbox.process.code_run('print("Hello World!")')

@@ -315,11 +315,7 @@ class Daytona:
 
         return self._create(params, timeout=timeout, on_snapshot_create_logs=on_snapshot_create_logs)
 
-    @with_timeout(
-        error_message=lambda self, timeout: (
-            f"Failed to create and start sandbox within {timeout} seconds timeout period."
-        )
-    )
+    @with_timeout()
     def _create(
         self,
         params: Optional[Union[CreateSandboxFromSnapshotParams, CreateSandboxFromImageParams]] = None,
@@ -378,6 +374,9 @@ class Daytona:
             sandbox_data.memory = params.resources.memory
             sandbox_data.disk = params.resources.disk
             sandbox_data.gpu = params.resources.gpu
+
+        while True:
+            time.sleep(1)
 
         response = self._sandbox_api.create_sandbox(sandbox_data, _request_timeout=timeout or None)
 

@@ -22,7 +22,7 @@ async def main():
                 disk=3,
             ),
         )
-        sandbox = await daytona.create(params, timeout=150, on_snapshot_create_logs=print)
+        sandbox = await daytona.create(params, timeout=5, on_snapshot_create_logs=print)
 
         try:
             # Run the code securely inside the sandbox
