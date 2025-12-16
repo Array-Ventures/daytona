@@ -4,7 +4,7 @@ title: Getting Started
 
 import { TabItem, Tabs } from '@astrojs/starlight/components'
 
-The Daytona SDK provides official [Python](/docs/en/python-sdk) and [TypeScript](/docs/en/typescript-sdk) interfaces for interacting with Daytona, enabling you to programmatically manage development environments and execute code. [Python SDK](/docs/en/python-sdk) supports both sync and async programming models where async classes are prefixed with `Async`.
+The Daytona SDK provides official [Python](/docs/en/python-sdk), [TypeScript](/docs/en/typescript-sdk), and [Ruby](/docs/en/ruby-sdk) interfaces for interacting with Daytona, enabling you to programmatically manage development environments and execute code. [Python SDK](/docs/en/python-sdk) supports both sync and async programming models where async classes are prefixed with `Async`.
 
 Follow the step-by-step guide to create and run your first Daytona Sandbox for an AI Agent.
 
@@ -12,7 +12,7 @@ For steps on additional configuration, including setting environment variables a
 
 ## Install the Daytona SDK
 
-Daytona provides official Python and TypeScript SDKs for interacting with the Daytona platform. Install the SDK using your preferred method:
+Daytona provides official Python, TypeScript, and Ruby SDKs for interacting with the Daytona platform. Install the SDK using your preferred method:
 
 <Tabs syncKey="language">
   <TabItem label="Python" icon="seti:python">
@@ -34,6 +34,17 @@ Daytona provides official Python and TypeScript SDKs for interacting with the Da
 
     pnpm add @daytonaio/sdk
 
+    ```
+  </TabItem>
+
+  <TabItem label="Ruby" icon="seti:ruby">
+    ```bash
+    # Using Bundler (add to Gemfile)
+    gem 'daytona-sdk'
+
+    # Or install directly
+
+    gem install daytona-sdk
     ```
   </TabItem>
 </Tabs>
@@ -395,7 +406,7 @@ The following snippet connects to an LLM using the Anthropic API and asks Claude
 
 ## Additional Examples
 
-Use the Daytona SDK [Python examples](https://github.com/daytonaio/daytona/tree/main/examples/python) or [TypeScript/JavaScript examples](https://github.com/daytonaio/daytona/tree/main/examples/typescript) to create a Sandbox and run your code.
+Use the Daytona SDK [Python examples](https://github.com/daytonaio/daytona/tree/main/examples/python), [TypeScript/JavaScript examples](https://github.com/daytonaio/daytona/tree/main/examples/typescript), or [Ruby examples](https://github.com/daytonaio/daytona/tree/main/examples/ruby) to create a Sandbox and run your code.
 
 Speed up your development on Daytona using LLMs. Copy the /llms.txt files and include them into your projects or chat context: [llms-full.txt](https://www.daytona.io/docs/llms-full.txt) or [llms.txt](https://www.daytona.io/docs/llms.txt)
 
