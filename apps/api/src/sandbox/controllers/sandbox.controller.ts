@@ -39,6 +39,7 @@ import {
 import { SandboxDto, SandboxLabelsDto } from '../dto/sandbox.dto'
 import { UpdateSandboxStateDto } from '../dto/update-sandbox-state.dto'
 import { PaginatedSandboxesDto } from '../dto/paginated-sandboxes.dto'
+import { PaginatedSandboxesDeprecatedDto } from '../dto/paginated-sandboxes-deprecated.dto'
 import { RunnerService } from '../services/runner.service'
 import { RunnerAuthGuard } from '../../auth/runner-auth.guard'
 import { RunnerContextDecorator } from '../../common/decorators/runner-context.decorator'
@@ -74,6 +75,7 @@ import { AuthenticatedRateLimitGuard } from '../../common/guards/authenticated-r
 import { SkipThrottle } from '@nestjs/throttler'
 import { ThrottlerScope } from '../../common/decorators/throttler-scope.decorator'
 import { SshGatewayGuard } from '../../auth/ssh-gateway.guard'
+import { ListSandboxesQueryDto } from '../dto/list-sandboxes-query.dto'
 
 @ApiTags('sandbox')
 @Controller('sandbox')
@@ -93,48 +95,24 @@ export class SandboxController {
 
   @Get()
   @ApiOperation({
-    summary: 'List all sandboxes',
+    summary: 'List sandboxes',
+    description: 'Basic filtering with cursor-based pagination. Newest first. Strongly consistent.',
     operationId: 'listSandboxes',
   })
   @ApiResponse({
     status: 200,
-    description: 'List of all sandboxes',
-    type: [SandboxDto],
-  })
-  @ApiQuery({
-    name: 'verbose',
-    required: false,
-    type: Boolean,
-    description: 'Include verbose output',
-  })
-  @ApiQuery({
-    name: 'labels',
-    type: String,
-    required: false,
-    example: '{"label1": "value1", "label2": "value2"}',
-    description: 'JSON encoded labels to filter by',
-  })
-  @ApiQuery({
-    name: 'includeErroredDeleted',
-    required: false,
-    type: Boolean,
-    description: 'Include errored and deleted sandboxes',
+    type: PaginatedSandboxesDto,
   })
   async listSandboxes(
     @AuthContext() authContext: OrganizationAuthContext,
-    @Query('verbose') verbose?: boolean,
-    @Query('labels') labelsQuery?: string,
-    @Query('includeErroredDeleted') includeErroredDeleted?: boolean,
-  ): Promise<SandboxDto[]> {
-    const labels = labelsQuery ? JSON.parse(labelsQuery) : undefined
-    const sandboxes = await this.sandboxService.findAllDeprecated(
-      authContext.organizationId,
-      labels,
-      includeErroredDeleted,
-    )
+    @Query() queryParams: ListSandboxesQueryDto,
+  ): Promise<PaginatedSandboxesDto> {
+    const { cursor, limit, name, includeErroredDeleted: includeErroredDestroyed, states } = queryParams
 
-    return sandboxes.map((sandbox) => {
-      return SandboxDto.fromSandbox(sandbox)
+    return this.sandboxService.list(authContext.organizationId, cursor, limit, {
+      name,
+      includeErroredDestroyed,
+      states,
     })
   }
 
@@ -147,12 +125,12 @@ export class SandboxController {
   @ApiResponse({
     status: 200,
     description: 'Paginated list of all sandboxes',
-    type: PaginatedSandboxesDto,
+    type: PaginatedSandboxesDeprecatedDto,
   })
   async listSandboxesPaginated(
     @AuthContext() authContext: OrganizationAuthContext,
     @Query() queryParams: ListSandboxesQueryDeprecatedDto,
-  ): Promise<PaginatedSandboxesDto> {
+  ): Promise<PaginatedSandboxesDeprecatedDto> {
     const {
       page,
       limit,
@@ -175,7 +153,7 @@ export class SandboxController {
       order: sortDirection,
     } = queryParams
 
-    const result = await this.sandboxService.list_deprecated(
+    const result = await this.sandboxService.list_deprecated_v2(
       authContext.organizationId,
       page,
       limit,

@@ -102,6 +102,7 @@ models/organization-usage-overview.ts
 models/organization-user.ts
 models/organization.ts
 models/paginated-audit-logs.ts
+models/paginated-sandboxes-deprecated.ts
 models/paginated-sandboxes.ts
 models/paginated-snapshots.ts
 models/port-preview-url.ts

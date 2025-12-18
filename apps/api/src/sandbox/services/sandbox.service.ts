@@ -5,7 +5,7 @@
 
 import { ForbiddenException, Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Not, Repository, LessThan, In, JsonContains, FindOptionsWhere, ILike } from 'typeorm'
+import { Not, Repository, LessThan, In, JsonContains, FindOptionsWhere, ILike, Like } from 'typeorm'
 import { Sandbox } from '../entities/sandbox.entity'
 import { CreateSandboxDto } from '../dto/create-sandbox.dto'
 import { SandboxState } from '../enums/sandbox-state.enum'
@@ -70,6 +70,7 @@ import { SandboxRepository } from '../repositories/sandbox.repository'
 import { PortPreviewUrlDto } from '../dto/port-preview-url.dto'
 import { RegionService } from '../../region/services/region.service'
 import { DefaultRegionRequiredException } from '../../organization/exceptions/DefaultRegionRequiredException'
+import { PaginatedSandboxesDto } from '../dto/paginated-sandboxes.dto'
 
 const DEFAULT_CPU = 1
 const DEFAULT_MEMORY = 1
@@ -709,7 +710,7 @@ export class SandboxService {
     return sandbox
   }
 
-  async findAllDeprecated(
+  async list_deprecated_v1(
     organizationId: string,
     labels?: { [key: string]: string },
     includeErroredDestroyed?: boolean,
@@ -734,7 +735,7 @@ export class SandboxService {
     return this.sandboxRepository.find({ where })
   }
 
-  async list_deprecated(
+  async list_deprecated_v2(
     organizationId: string,
     page = 1,
     limit = 10,
@@ -798,21 +799,28 @@ export class SandboxService {
     baseFindOptions.disk = createRangeFilter(minDiskGiB, maxDiskGiB)
     baseFindOptions.lastActivityAt = createRangeFilter(lastEventAfter, lastEventBefore)
 
-    const filteredStates = (states || Object.values(SandboxState)).filter((state) => state !== SandboxState.DESTROYED)
+    const statesToInclude = (states || Object.values(SandboxState)).filter((state) => state !== SandboxState.DESTROYED)
     const errorStates = [SandboxState.ERROR, SandboxState.BUILD_FAILED]
-    const filteredWithoutErrorStates = filteredStates.filter((state) => !errorStates.includes(state))
 
-    const where: FindOptionsWhere<Sandbox>[] = [
-      {
+    const nonErrorStatesToInclude = statesToInclude.filter((state) => !errorStates.includes(state))
+    const errorStatesToInclude = statesToInclude.filter((state) => errorStates.includes(state))
+
+    const where: FindOptionsWhere<Sandbox>[] = []
+
+    if (nonErrorStatesToInclude.length > 0) {
+      where.push({
         ...baseFindOptions,
-        state: In(filteredWithoutErrorStates),
-      },
-      {
+        state: In(nonErrorStatesToInclude),
+      })
+    }
+
+    if (errorStatesToInclude.length > 0) {
+      where.push({
         ...baseFindOptions,
-        state: In(errorStates),
+        state: In(errorStatesToInclude),
         ...(includeErroredDestroyed ? {} : { desiredState: Not(SandboxDesiredState.DESTROYED) }),
-      },
-    ]
+      })
+    }
 
     const [items, total] = await this.sandboxRepository.findAndCount({
       where,
@@ -832,6 +840,103 @@ export class SandboxService {
       total,
       page: pageNum,
       totalPages: Math.ceil(total / limitNum),
+    }
+  }
+
+  /**
+   * List sandboxes with pagination (newest first)
+   * @param organizationId - The ID of the organization
+   * @param cursor - The cursor to use for pagination, if omitted, will return the newest sandboxes
+   * @param limit - The number of sandboxes to return per page
+   * @param filters - The filters to apply to the list
+   * @returns The paginated list of sandboxes
+   * @throws BadRequestError if the cursor is invalid
+   * @throws BadRequestError if the name and states filters are combined
+   */
+  async list(
+    organizationId: string,
+    cursor: string | undefined,
+    limit: number,
+    filters?: {
+      name?: string
+      includeErroredDestroyed?: boolean
+      states?: SandboxState[]
+    },
+  ): Promise<PaginatedSandboxesDto> {
+    const { name, includeErroredDestroyed, states } = filters || {}
+
+    if (name && states?.length > 0) {
+      throw new BadRequestError('Cannot combine "name" and "states" filters')
+    }
+
+    let decodedCursor: Date | undefined
+    if (cursor) {
+      try {
+        const decodedString = Buffer.from(cursor, 'base64').toString('utf-8')
+        decodedCursor = new Date(decodedString)
+        if (isNaN(decodedCursor.getTime())) {
+          throw new BadRequestError('Invalid cursor')
+        }
+      } catch (error) {
+        throw new BadRequestError('Invalid cursor')
+      }
+    }
+
+    const baseFindOptions: FindOptionsWhere<Sandbox> = {
+      organizationId,
+      ...(name ? { name: Like(`${name}%`) } : {}),
+      ...(decodedCursor
+        ? {
+            // newest first
+            createdAt: LessThan(decodedCursor),
+          }
+        : {}),
+    }
+
+    const statesToInclude = (states || Object.values(SandboxState)).filter((state) => state !== SandboxState.DESTROYED)
+    const errorStates = [SandboxState.ERROR, SandboxState.BUILD_FAILED]
+
+    const nonErrorStatesToInclude = statesToInclude.filter((state) => !errorStates.includes(state))
+    const errorStatesToInclude = statesToInclude.filter((state) => errorStates.includes(state))
+
+    const where: FindOptionsWhere<Sandbox>[] = []
+
+    if (nonErrorStatesToInclude.length > 0) {
+      where.push({
+        ...baseFindOptions,
+        state: In(nonErrorStatesToInclude),
+      })
+    }
+
+    if (errorStatesToInclude.length > 0) {
+      where.push({
+        ...baseFindOptions,
+        state: In(errorStatesToInclude),
+        ...(includeErroredDestroyed ? {} : { desiredState: Not(SandboxDesiredState.DESTROYED) }),
+      })
+    }
+
+    const items = await this.sandboxRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+      // fetch one extra to determine if there are more items
+      take: limit + 1,
+      loadEagerRelations: false,
+    })
+
+    const hasMore = items.length > limit
+    const returnItems = hasMore ? items.slice(0, limit) : items
+
+    const nextCursor =
+      hasMore && returnItems.length > 0
+        ? Buffer.from(returnItems[returnItems.length - 1].createdAt.toISOString()).toString('base64')
+        : null
+
+    return {
+      items: returnItems.map((sandbox) => {
+        return SandboxDto.fromSandbox(sandbox)
+      }),
+      nextCursor,
     }
   }
 
