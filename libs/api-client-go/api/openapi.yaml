@@ -9404,6 +9404,7 @@ components:
       type: string
     Runner:
       example:
+        isDraining: false
         memory: 16
         apiKey: api-key-123
         currentMemoryUsagePercentage: 68.2
@@ -9522,6 +9523,10 @@ components:
           type: string
         unschedulable:
           description: Whether the runner is unschedulable
+          example: false
+          type: boolean
+        isDraining:
+          description: Whether the runner is draining (not accepting new sandboxes)
           example: false
           type: boolean
         createdAt:
