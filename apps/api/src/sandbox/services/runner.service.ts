@@ -534,6 +534,16 @@ export class RunnerService {
     return this.runnerRepository.save(runner)
   }
 
+  async updateDrainingStatus(id: string, isDraining: boolean): Promise<Runner> {
+    const runner = await this.runnerRepository.findOne({ where: { id } })
+    if (!runner) {
+      throw new Error('Runner not found')
+    }
+
+    runner.isDraining = isDraining
+    return this.runnerRepository.save(runner)
+  }
+
   async getRandomAvailableRunner(params: GetRunnerParams): Promise<Runner> {
     const availableRunners = await this.findAvailableRunners(params)
 

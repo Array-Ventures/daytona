@@ -2523,6 +2523,29 @@ paths:
       summary: Update runner scheduling status
       tags:
         - runners
+  /runners/{id}/draining:
+    patch:
+      operationId: updateRunnerDraining
+      parameters:
+        - explode: false
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          style: simple
+      responses:
+        '200':
+          description: ''
+      security:
+        - bearer: []
+        - oauth2:
+            - openid
+            - profile
+            - email
+      summary: Update runner draining status
+      tags:
+        - runners
   /runners/by-sandbox/{sandboxId}:
     get:
       operationId: getRunnerBySandboxId
