@@ -183,6 +183,29 @@ Check your available resources and limits in the [dashboard](https://app.daytona
     ```
 
   </TabItem>
+
+  <TabItem label="Ruby" icon="seti:ruby">
+    ```ruby
+    require 'daytona'
+
+    daytona = Daytona::Daytona.new
+
+    # Create a Sandbox with custom resources
+    resources = Daytona::Resources.new(
+      cpu: 2,    # 2 CPU cores
+      memory: 4, # 4GB RAM
+      disk: 8    # 8GB disk space
+    )
+
+    params = Daytona::CreateSandboxFromImageParams.new(
+      image: Daytona::Image.debian_slim('3.12'),
+      resources: resources
+    )
+
+    sandbox = daytona.create(params)
+    ```
+
+  </TabItem>
 </Tabs>
 
 :::note
@@ -224,6 +247,22 @@ To create an ephemeral Sandbox, set `ephemeral` to `True` when creating a Sandbo
       ephemeral: true,
       autoStopInterval: 5 // the ephemeral sandbox will be deleted after 5 minutes of inactivity
     });
+    ```
+
+  </TabItem>
+
+  <TabItem label="Ruby" icon="seti:ruby">
+    ```ruby
+    require 'daytona'
+
+    daytona = Daytona::Daytona.new
+
+    # Create an ephemeral Sandbox
+    params = Daytona::CreateSandboxFromSnapshotParams.new(
+      ephemeral: true,
+      auto_stop_interval: 5 # the ephemeral sandbox will be deleted after 5 minutes of inactivity
+    )
+    sandbox = daytona.create(params)
     ```
 
   </TabItem>
@@ -490,6 +529,16 @@ If the parameter is not set, the default interval of `15` minutes will be used.
     });
     ```
   </TabItem>
+
+  <TabItem label="Ruby" icon="seti:ruby">
+    ```ruby
+    params = Daytona::CreateSandboxFromSnapshotParams.new(
+      snapshot: 'my-snapshot-name',
+      auto_stop_interval: 0 # Disables the auto-stop feature - default is 15 minutes
+    )
+    sandbox = daytona.create(params)
+    ```
+  </TabItem>
 </Tabs>
 
 ### Auto-archive Interval
@@ -519,6 +568,16 @@ If the parameter is not set, the default interval of `7 days` days will be used.
         snapshot: "my-snapshot-name",
         autoArchiveInterval: 60 // Auto-archive after a Sandbox has been stopped for 1 hour
     });
+    ```
+  </TabItem>
+
+  <TabItem label="Ruby" icon="seti:ruby">
+    ```ruby
+    params = Daytona::CreateSandboxFromSnapshotParams.new(
+      snapshot: 'my-snapshot-name',
+      auto_archive_interval: 60 # Auto-archive after a Sandbox has been stopped for 1 hour
+    )
+    sandbox = daytona.create(params)
     ```
   </TabItem>
 </Tabs>
@@ -570,6 +629,23 @@ If the parameter is not set, the Sandbox will not be deleted automatically.
     ```
 
   </TabItem>
+
+  <TabItem label="Ruby" icon="seti:ruby">
+    ```ruby
+    params = Daytona::CreateSandboxFromSnapshotParams.new(
+      snapshot: 'my-snapshot-name',
+      auto_delete_interval: 60 # Auto-delete after a Sandbox has been stopped for 1 hour
+    )
+    sandbox = daytona.create(params)
+
+    # Delete the Sandbox immediately after it has been stopped
+    sandbox.auto_delete_interval = 0
+
+    # Disable auto-deletion
+    sandbox.auto_delete_interval = -1
+    ```
+
+  </TabItem>
 </Tabs>
 
 ## Run Indefinitely
@@ -592,6 +668,16 @@ By default, Sandboxes auto-stop after 15 minutes of inactivity. To keep a Sandbo
         snapshot: "my-snapshot-name",
         autoStopInterval: 0, // Disables the auto-stop feature - default is 15 minutes
     });
+    ```
+  </TabItem>
+
+  <TabItem label="Ruby" icon="seti:ruby">
+    ```ruby
+    params = Daytona::CreateSandboxFromSnapshotParams.new(
+      snapshot: 'my-snapshot-name',
+      auto_stop_interval: 0 # Disables the auto-stop feature - default is 15 minutes
+    )
+    sandbox = daytona.create(params)
     ```
   </TabItem>
 </Tabs>
@@ -621,6 +707,16 @@ Recovery actions are not performed automatically because they address errors tha
         await sandbox.recover();
         console.log('Sandbox recovered successfully');
     }
+    ```
+  </TabItem>
+
+  <TabItem label="Ruby" icon="seti:ruby">
+    ```ruby
+    # Check if the Sandbox is recoverable
+    if sandbox.recoverable
+      sandbox.recover
+      puts 'Sandbox recovered successfully'
+    end
     ```
   </TabItem>
 </Tabs>
