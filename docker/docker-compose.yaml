@@ -3,7 +3,7 @@ services:
   api:
     image: daytonaio/daytona-api
     ports:
-      - 3000:3000
+      - ${PORT:-3000}:3000
     environment:
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
