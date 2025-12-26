@@ -3,12 +3,16 @@ services:
   api:
     image: daytonaio/daytona-api
     ports:
-      - 3000:3000
+      - ${PORT:-3000}:3000
     environment:
-      - OTEL_ENABLED=true
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      # Telemetry disabled for self-hosting (removes otel-collector dependency)
+      - OTEL_ENABLED=false
       # Default to slim image for faster startup
       - DEFAULT_SNAPSHOT=daytonaio/sandbox:0.5.0-slim
+      # External domain configuration - set these env vars for your deployment
+      - PUBLIC_OIDC_DOMAIN=${PUBLIC_OIDC_DOMAIN:-}
+      - DASHBOARD_URL=${DASHBOARD_URL:-}
+      - DASHBOARD_BASE_API_URL=${DASHBOARD_BASE_API_URL:-}
     networks:
       - daytona-network
     restart: always
@@ -152,19 +156,21 @@ services:
     ports:
       - 9001:9001
 
-  jaeger:
-    image: jaegertracing/all-in-one:1.67.0
-    networks:
-      - daytona-network
-    ports:
-      - 16686:16686
+  # Telemetry services - commented out for self-hosting to avoid volume mount issues
+  # To enable: uncomment these services and set OTEL_ENABLED=true in api service
+  # jaeger:
+  #   image: jaegertracing/all-in-one:1.67.0
+  #   networks:
+  #     - daytona-network
+  #   ports:
+  #     - 16686:16686
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.138.0
-    volumes:
-      - ./otel/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
-    networks:
-      - daytona-network
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:0.138.0
+  #   volumes:
+  #     - ./otel/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+  #   networks:
+  #     - daytona-network
 
 volumes:
   registry: {}
