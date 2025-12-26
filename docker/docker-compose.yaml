@@ -29,7 +29,7 @@ services:
     networks:
       - daytona-network
     ports:
-      - 4000:4000
+      - ${PROXY_PORT:-4001}:4000
     restart: always
 
   runner:
@@ -150,11 +150,11 @@ services:
       - MINIO_IDENTITY_STS_EXPIRY="24h"
     volumes:
       - minio_data:/data
-    command: server /data --console-address ":9001"
+    command: server /data --console-address ":9002"
     networks:
       - daytona-network
     ports:
-      - 9001:9001
+      - ${MINIO_PORT:-9002}:9002
 
   # Telemetry services - commented out for self-hosting to avoid volume mount issues
   # To enable: uncomment these services and set OTEL_ENABLED=true in api service
