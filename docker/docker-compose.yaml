@@ -51,6 +51,9 @@ services:
 
   dex:
     image: dexidp/dex:v2.42.0
+    environment:
+      - DEX_ISSUER=${DEX_ISSUER:-http://localhost:5556/dex}
+      - DEX_REDIRECT_URI=${DEX_REDIRECT_URI:-http://localhost:3000}
     volumes:
       - dex_db:/var/dex
     entrypoint:
@@ -58,8 +61,8 @@ services:
       - -c
       - |
         rm -rf /etc/dex/config.yaml
-        cat > /etc/dex/config.yaml << 'EOF'
-        issuer: http://localhost:5556/dex
+        cat > /etc/dex/config.yaml << EOFCONFIG
+        issuer: ${DEX_ISSUER}
         storage:
           type: sqlite3
           config:
@@ -75,15 +78,17 @@ services:
               - 'http://localhost:3000/api/oauth2-redirect.html'
               - 'http://localhost:3009/callback'
               - 'http://proxy.localhost:4000/callback'
+              - '${DEX_REDIRECT_URI}'
+              - '${DEX_REDIRECT_URI}/api/oauth2-redirect.html'
             name: 'Daytona'
             public: true
         enablePasswordDB: true
         staticPasswords:
           - email: 'dev@daytona.io'
-            hash: '$$2a$$10$$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W'
+            hash: '\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W'
             username: 'admin'
             userID: '1234'
-        EOF
+        EOFCONFIG
         touch /var/dex/dex.db && exec dex serve /etc/dex/config.yaml
     networks:
       - daytona-network

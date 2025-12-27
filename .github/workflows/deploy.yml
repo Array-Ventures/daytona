@@ -25,3 +25,5 @@ jobs:
             PUBLIC_OIDC_DOMAIN=${{ vars.PUBLIC_OIDC_DOMAIN }}
             DASHBOARD_URL=${{ vars.DASHBOARD_URL }}
             DASHBOARD_BASE_API_URL=${{ vars.DASHBOARD_BASE_API_URL }}
+            DEX_ISSUER=${{ vars.DEX_ISSUER }}
+            DEX_REDIRECT_URI=${{ vars.DEX_REDIRECT_URI }}
