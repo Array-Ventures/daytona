@@ -61,12 +61,17 @@ services:
     environment:
       - DEX_ISSUER=${DEX_ISSUER:-http://localhost:5556/dex}
       - DEX_REDIRECT_URI=${DEX_REDIRECT_URI:-http://localhost:3000}
+      - DEX_USER_EMAIL=${DEX_USER_EMAIL:-dev@daytona.io}
+      - DEX_USER_PASSWORD_HASH=${DEX_USER_PASSWORD_HASH:-}
+      - DEX_USER_USERNAME=${DEX_USER_USERNAME:-admin}
     volumes:
       - dex_db:/var/dex
     entrypoint:
       - sh
       - -c
       - |
+        DEFAULT_HASH='$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W'
+        HASH="${DEX_USER_PASSWORD_HASH:-$DEFAULT_HASH}"
         rm -rf /etc/dex/config.yaml
         cat > /etc/dex/config.yaml << EOFCONFIG
         issuer: ${DEX_ISSUER}
@@ -91,9 +96,9 @@ services:
             public: true
         enablePasswordDB: true
         staticPasswords:
-          - email: 'dev@daytona.io'
-            hash: '\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W'
-            username: 'admin'
+          - email: '${DEX_USER_EMAIL}'
+            hash: '${HASH}'
+            username: '${DEX_USER_USERNAME}'
             userID: '1234'
         EOFCONFIG
         touch /var/dex/dex.db && exec dex serve /etc/dex/config.yaml
