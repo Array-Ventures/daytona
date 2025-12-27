@@ -52,9 +52,39 @@ services:
   dex:
     image: dexidp/dex:v2.42.0
     volumes:
-      - ./dex/config.yaml:/etc/dex/config.yaml
       - dex_db:/var/dex
-    entrypoint: ['sh', '-c', 'touch /var/dex/dex.db && exec dex serve /etc/dex/config.yaml']
+    entrypoint:
+      - sh
+      - -c
+      - |
+        rm -rf /etc/dex/config.yaml
+        cat > /etc/dex/config.yaml << 'EOF'
+        issuer: http://localhost:5556/dex
+        storage:
+          type: sqlite3
+          config:
+            file: /var/dex/dex.db
+        web:
+          http: 0.0.0.0:5556
+          allowedOrigins: ['*']
+          allowedHeaders: ['x-requested-with']
+        staticClients:
+          - id: daytona
+            redirectURIs:
+              - 'http://localhost:3000'
+              - 'http://localhost:3000/api/oauth2-redirect.html'
+              - 'http://localhost:3009/callback'
+              - 'http://proxy.localhost:4000/callback'
+            name: 'Daytona'
+            public: true
+        enablePasswordDB: true
+        staticPasswords:
+          - email: 'dev@daytona.io'
+            hash: '$$2a$$10$$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W'
+            username: 'admin'
+            userID: '1234'
+        EOF
+        touch /var/dex/dex.db && exec dex serve /etc/dex/config.yaml
     networks:
       - daytona-network
     ports:
