@@ -13,6 +13,9 @@ services:
       - PUBLIC_OIDC_DOMAIN=${PUBLIC_OIDC_DOMAIN:-}
       - DASHBOARD_URL=${DASHBOARD_URL:-}
       - DASHBOARD_BASE_API_URL=${DASHBOARD_BASE_API_URL:-}
+      # Proxy configuration
+      - PROXY_DOMAIN=${PROXY_DOMAIN:-proxy.localhost:4000}
+      - PROXY_PROTOCOL=${PROXY_PROTOCOL:-http}
     networks:
       - daytona-network
     restart: always
@@ -26,6 +29,10 @@ services:
 
   proxy:
     image: daytonaio/daytona-proxy
+    environment:
+      - PROXY_DOMAIN=${PROXY_DOMAIN:-proxy.localhost:4000}
+      - PROXY_PROTOCOL=${PROXY_PROTOCOL:-http}
+      - OIDC_PUBLIC_DOMAIN=${PUBLIC_OIDC_DOMAIN:-http://localhost:5556/dex}
     networks:
       - daytona-network
     ports:
